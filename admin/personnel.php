@@ -584,15 +584,13 @@ const RANK_OPTIONS = [
                             <input type="date" class="form-control" id="edit_cdlb_printed_date" name="cdlb_printed_date">
                         </div>
                         <div class="col-md-12">
-                            <label for="edit_pdf_file" class="form-label">Upload PDF Document</label>
+                            <label for="edit_pdf_file" class="form-label">Update Document</label>
                             <input type="file" class="form-control" id="edit_pdf_file" name="pdf_file" accept=".pdf">
-                            <small class="text-muted">Max size: 5MB. Only PDF files accepted.</small>
+                            <small class="text-muted">Upload will replace existing document (Max 5MB)</small>
                             <div id="current_pdf_container" class="mt-2" style="display: none;">
-                                <span class="badge bg-secondary">Current file: </span>
-                                <a href="#" id="current_pdf_link" target="_blank"></a>
-                                <button type="button" class="btn btn-sm btn-outline-danger ms-2" id="remove_pdf">
-                                    <i class="bi bi-trash"></i> Remove
-                                </button>
+                                <a href="#" id="current_pdf_link" target="_blank" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-file-earmark-pdf"></i> View Current Document
+                                </a>
                             </div>
                         </div>
                     </div>
@@ -911,6 +909,7 @@ const RANK_OPTIONS = [
     });
 
     // Save edited data
+    // Save edited data - Enhanced with better debugging
     document.getElementById('confirmEdit').addEventListener('click', function() {
         editSpinner.classList.remove('d-none');
         editButtonText.textContent = 'Saving...';
@@ -918,19 +917,50 @@ const RANK_OPTIONS = [
         const formData = new FormData(editForm);
         formData.set('has_cdlb', document.getElementById('edit_has_cdlb').checked ? '1' : '0');
 
+        // Debug: Log what we're sending
+        console.log('Form data being sent:');
+        for (let [key, value] of formData.entries()) {
+            console.log(key + ': ' + value);
+        }
+
         fetch('../api/update_personnel.php', {
             method: 'POST',
             body: formData
         })
-            .then(response => response.json())
-            .then(data => {
-                if (!data.success) throw new Error(data.message);
+            .then(response => {
+                console.log('Response status:', response.status);
+                return response.text(); // Get as text first to see raw response
+            })
+            .then(text => {
+                console.log('Raw response:', text);
+                try {
+                    const data = JSON.parse(text);
+                    console.log('Parsed response:', data);
 
-                toastr.success(data.message);
-                editModal.hide();
-                setTimeout(() => window.location.reload(), 1500);
+                    if (!data.success) throw new Error(data.message);
+
+                    toastr.success(data.message);
+
+                    // Update PDF display if new file was uploaded
+                    if (data.pdf_path) {
+                        const pdfContainer = document.getElementById('current_pdf_container');
+                        pdfContainer.style.display = 'block';
+                        document.getElementById('current_pdf_link').textContent = 'View Document';
+                        document.getElementById('current_pdf_link').href = '../' + data.pdf_path;
+                    }
+
+                    // Close modal after slight delay to show success message
+                    setTimeout(() => {
+                        editModal.hide();
+                        window.location.reload();
+                    }, 1500);
+                } catch (e) {
+                    console.error('JSON parse error:', e);
+                    throw new Error('Invalid response format: ' + text);
+                }
             })
             .catch(error => {
+                console.error('Update error:', error);
                 toastr.error(error.message || 'Update failed');
             })
             .finally(() => {

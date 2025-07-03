@@ -19,7 +19,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['badge_number'])) {
     <title>PNP System - Personnel Search</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-    <link rel="stylesheet" href="plugins/toastr/toastr.min.css">
+    <!-- Fixed: Use only one toastr CSS source -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet">
     <style>
         :root {
             --pnp-primary: #1e3a8a;
@@ -512,9 +513,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['badge_number'])) {
     </div>
 </div>
 
+<!-- Fixed: Load jQuery first, then Bootstrap, then Toastr -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="plugins/toastr/toastr.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+
 <script>
+    // Configure toastr options
+    toastr.options = {
+        closeButton: true,
+        debug: false,
+        newestOnTop: true,
+        progressBar: true,
+        positionClass: 'toast-top-right',
+        preventDuplicates: true,
+        onclick: null,
+        showDuration: '300',
+        hideDuration: '1000',
+        timeOut: '5000',
+        extendedTimeOut: '1000',
+        showEasing: 'swing',
+        hideEasing: 'linear',
+        showMethod: 'fadeIn',
+        hideMethod: 'fadeOut'
+    };
+
     function showDownloadLoading() {
         toastr.info('Preparing CDLB document... Please wait', 'Processing', {
             timeOut: 3000,
@@ -522,31 +545,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['badge_number'])) {
         });
     }
 
-    toastr.options = {
-        closeButton: true,
-        progressBar: true,
-        positionClass: 'toast-top-right',
-        timeOut: 5000
-    };
-
+    // Show toastr messages based on search results
     <?php if ($result): ?>
-    toastr.success('Personnel record found', 'Search Complete');
+        toastr.success('Personnel record found', 'Search Complete');
     <?php elseif ($_SERVER['REQUEST_METHOD'] === 'POST'): ?>
-    toastr.error('No personnel found with that badge number', 'Search Complete');
+        toastr.error('No personnel found with that badge number', 'Search Complete');
     <?php endif; ?>
 
+    // Handle form submission with loading state
     document.querySelector('form').addEventListener('submit', function(e) {
         const submitBtn = this.querySelector('button[type="submit"]');
         const originalHTML = submitBtn.innerHTML;
         submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Searching...';
         submitBtn.disabled = true;
 
+        // Reset button after 10 seconds as fallback
         setTimeout(() => {
             submitBtn.innerHTML = originalHTML;
             submitBtn.disabled = false;
         }, 10000);
     });
 
+    // Auto-focus the search input if it's empty
     const searchInput = document.querySelector('input[name="badge_number"]');
     if (searchInput && !searchInput.value) {
         searchInput.focus();

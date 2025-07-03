@@ -118,7 +118,7 @@ try {
         $photo_path = 'assets/uploads/' . $photo_name;
     }
 
-    // Handle PDF document upload - Note: Your schema shows pdf_path as INT, which should likely be VARCHAR
+    
     $pdf_path = null;
     if (isset($_FILES['document_pdf']) && $_FILES['document_pdf']['error'] === UPLOAD_ERR_OK) {
         $allowed_types = ['application/pdf'];
